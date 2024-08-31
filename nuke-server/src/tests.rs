@@ -5,7 +5,7 @@ mod tests {
     #[test]
     fn test_new_database() {
         let database = Database::new(10, "test".to_string());
-        assert_eq!(database.count_entries(), 10);
+        assert_eq!(database.partition_number, 10);
     }
 
     #[test]

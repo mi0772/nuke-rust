@@ -9,3 +9,4 @@ serde_json = "1.0"
 tokio = { version = "1", features = ["full"] }
 log = "0.4"          # Crate per la registrazione dei log
 env_logger = "0.11"
+fnv = "1.0"

@@ -1,5 +1,6 @@
-use std::sync::{Arc, Mutex};
+use std::hash::{Hash, Hasher};
 use std::thread;
+use fnv::FnvHasher;
 use log::info;
 use crate::engine::partition::Partition;
 use crate::engine::{CacheItem, PartitionOperationError};
@@ -7,6 +8,7 @@ use crate::engine::{CacheItem, PartitionOperationError};
 pub struct Database {
     pub(crate) partitions: Vec<Partition>,
     path_file: String,
+    pub partition_number: u8,
 }
 
 impl Database {
@@ -14,6 +16,7 @@ impl Database {
         let mut database = Database {
             partitions : Vec::new(),
             path_file,
+            partition_number
         };
         let mut partition_resumed = 0;
 
@@ -63,7 +66,11 @@ impl Database {
     }
 
     fn get_partition_index(&self, key: &String) -> usize {
-        let partition_number = key.as_bytes()[0] % 10;
-        partition_number as usize
+        let mut hasher = FnvHasher::default();
+        key.hash(&mut hasher);
+        let hash = hasher.finish();
+        // Calcola il risultato modulo numero di partizioni
+        let result = (hash % self.partition_number as u64) as usize;
+        result
     }
 }
