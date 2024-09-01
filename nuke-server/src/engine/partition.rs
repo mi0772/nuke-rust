@@ -1,10 +1,11 @@
-use crate::engine::{CacheItem, PartitionOperationError};
+use crate::engine::{key_hasher, CacheItem, PartitionOperationError};
 use serde_json::to_string;
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{BufWriter, Write};
-use std::sync::{Arc, Mutex, RwLock};
+use std::sync::{Arc, RwLock};
 
+#[derive(Debug)]
 pub struct Partition {
     entries: HashMap<String, CacheItem>,
     pub(crate) partition_number: u8,
@@ -16,10 +17,9 @@ pub struct Partition {
 impl Partition {
     //function that try to load serialized content of partition from file
     pub(in crate::engine) fn load_data(&mut self) -> i32 {
-        // Open the file
         let file = match File::open(&self.partition_path) {
             Ok(file) => file,
-            Err(err) => {
+            Err(_) => {
                 return 0;
             }
         };
@@ -54,6 +54,7 @@ impl Partition {
         let mut mutex = self.mutex.write().unwrap();
         let cache_item = CacheItem {
             key: key.clone(),
+            hashed_key: key_hasher(&key),
             value,
             deleted: false,
         };
@@ -71,7 +72,7 @@ impl Partition {
     }
 
     pub(in crate::engine) fn read(&self, key: String) -> Result<&CacheItem, PartitionOperationError> {
-        let mutex = self.mutex.read().unwrap();
+        let _mutex = self.mutex.read().unwrap();
         let cache_item = self.entries.get(&key);
         if let Some(item) = cache_item {
             if item.deleted {

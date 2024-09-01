@@ -37,7 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                     Ok(n) => {
                         // Converti i dati ricevuti
                         let request = String::from_utf8_lossy(&buffer[..n]);
-                        let request = request.trim().replace('\r', "").replace('\n', "");
+                        let request = request.trim().replace(['\r', '\n'], "");
 
                         let command = tcp::Command::from_str(&request);
                         match command {
@@ -72,11 +72,4 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     Ok(())
-}
-
-async fn handle_request(request: &str, database: &Arc<Mutex<Database>>) -> String {
-    let mut db = database.lock().unwrap();
-    // Implementa la logica per gestire la richiesta basata sul database
-    // Esempio: `request` può essere un comando per operare sul database
-    "Operation result".to_string()
 }

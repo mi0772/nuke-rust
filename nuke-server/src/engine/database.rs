@@ -1,10 +1,10 @@
 use std::hash::{Hash, Hasher};
-use std::thread;
 use fnv::FnvHasher;
 use log::info;
 use crate::engine::partition::Partition;
 use crate::engine::{CacheItem, PartitionOperationError};
 
+#[derive(Debug)]
 pub struct Database {
     pub(crate) partitions: Vec<Partition>,
     path_file: String,
@@ -41,7 +41,7 @@ impl Database {
     }
 
     pub fn keys(&self) -> Vec<String> {
-        self.partitions.iter().map(|partition| partition.keys()).flatten().collect()
+        self.partitions.iter().flat_map(|partition| partition.keys()).collect()
     }
 
     pub fn push(&mut self, key: String, value: Vec<u8>) -> Result<&CacheItem, PartitionOperationError> {
@@ -70,7 +70,6 @@ impl Database {
         key.hash(&mut hasher);
         let hash = hasher.finish();
         // Calcola il risultato modulo numero di partizioni
-        let result = (hash % self.partition_number as u64) as usize;
-        result
+       (hash % self.partition_number as u64) as usize
     }
 }

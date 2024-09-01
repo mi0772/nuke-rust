@@ -1,4 +1,3 @@
-use std::ascii::AsciiExt;
 use std::sync::{Arc, Mutex};
 use crate::engine::database::Database;
 
@@ -8,7 +7,7 @@ pub(crate) enum Command {
     Push(String, Vec<u8>),
     Read(String),
     Keys,
-    Partitions_details,
+    PartitionsDetails,
     Clear,
     Quit,
 }
@@ -42,7 +41,7 @@ impl Command {
                 }
             }
             Some("keys") => Ok(Command::Keys),
-            Some("partitions_details") => Ok(Command::Partitions_details),
+            Some("partitions_details") => Ok(Command::PartitionsDetails),
             Some("clear") => Ok(Command::Clear),
             Some("quit") => Ok(Command::Quit),
             Some(command) => Err(format!("Unrecognized command: {}", command)),
@@ -75,7 +74,7 @@ pub(crate) async fn handle_request(command: Command, database: &Arc<Mutex<Databa
         Command::Keys => {
             format!("Keys: {:?}", db.keys())
         }
-        Command::Partitions_details => {
+        Command::PartitionsDetails => {
             let mut partitions_details = Vec::new();
             for partition in db.partitions.iter() {
                 partitions_details.push(format!("Partition {}: {}", partition.partition_number, partition.count_entries()));

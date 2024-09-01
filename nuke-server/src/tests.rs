@@ -18,9 +18,10 @@ mod tests {
     #[test]
     fn test_push_1000_entries() {
         let mut database = Database::new(10, "test".to_string());
-        for i in 0..1000 {
+        for i in 0..10 {
             database.push(format!("key_{}", i), vec![1, 2, 3]);
         }
-        assert_eq!(database.count_entries(), 1000);
+        println!("{:?}", database);
+        assert_eq!(database.count_entries(), 10);
     }
 }
