@@ -66,9 +66,14 @@ impl Partition {
     pub(in crate::engine) fn pop(&mut self, key: String) -> Result<&CacheItem, PartitionOperationError> {
         let mut mutex = self.mutex.write().unwrap();
         let cache_item = self.entries.get_mut(&key).unwrap();
-        cache_item.deleted = true;
-        *mutex = 0;
-        Ok(self.entries.get(&key).unwrap())
+        if !cache_item.deleted {
+            cache_item.deleted = true;
+            *mutex = 0;
+            Ok(self.entries.get(&key).unwrap())
+        } else {
+            *mutex = 0;
+            Err(PartitionOperationError::CacheItemNotFound)
+        }
     }
 
     pub(in crate::engine) fn read(&self, key: String) -> Result<&CacheItem, PartitionOperationError> {
@@ -132,7 +137,7 @@ impl Partition {
         self.entries.clear();
     }
 
-    pub(in crate::engine) fn keys(&self) -> Vec<String> {
+    pub(crate) fn keys(&self) -> Vec<String> {
         self.entries.keys().cloned().collect()
     }
 }

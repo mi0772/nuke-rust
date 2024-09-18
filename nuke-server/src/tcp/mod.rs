@@ -1,9 +1,11 @@
 use std::sync::{Arc, Mutex};
 use crate::engine::database::Database;
+use crate::response::{CommandResponse, ErrorResponse, KeysResponse, PartitionDetail, PartitionsDetailsResponse, ValueResponse};
+use crate::tcp::Command::PartitionsDetails;
 
 #[derive(Debug)]
 pub(crate) enum Command {
-    Get(String),
+    Pop(String),
     Push(String, Vec<u8>),
     Read(String),
     Keys,
@@ -17,9 +19,9 @@ impl Command {
         let command = command.to_ascii_lowercase();
         let mut parts = command.split_whitespace();
         match parts.next() {
-            Some("get") => {
+            Some("pop") => {
                 match parts.next() {
-                    Some(key) => Ok(Command::Get(key.to_string())),
+                    Some(key) => Ok(Command::Pop(key.to_string())),
                     None => Err("Missing key".to_string()),
                 }
             }
@@ -53,40 +55,41 @@ impl Command {
 pub(crate) async fn handle_request(command: Command, database: &Arc<Mutex<Database>>) -> String {
     let mut db = database.lock().unwrap();
     match command {
-        Command::Get(key) => {
-            match db.read(key.to_string()) {
-                Ok(cache_item) => format!("Value: {:?}", cache_item.value),
-                Err(_) => "Key not found".to_string(),
+        Command::Pop(key) => {
+            match db.pop(key.to_string()) {
+                Ok(cache_item) => ValueResponse{key, value: cache_item.value.clone()}.to_json(),
+                Err(_) => ErrorResponse{code: 0, message:"Key not found".to_string()}.to_json(),
             }
         }
         Command::Push(key, value) => {
             match db.push(key.to_string(), value.to_vec()) {
-                Ok(_) => "Value pushed".to_string(),
-                Err(_) => "Error pushing value".to_string(),
+                Ok(_) => ValueResponse{key, value: value.clone()}.to_json(),
+                Err(_) => ErrorResponse{code: 0, message:"Error pushing value".to_string()}.to_json(),
             }
         }
         Command::Read(key) => {
             match db.read(key.to_string()) {
-                Ok(cache_item) => format!("Value: {:?}", cache_item.value),
-                Err(e) => format!("Key not found : {:?}", e).to_string(),
+                Ok(cache_item) => ValueResponse{key, value: cache_item.value.clone()}.to_json(),
+                Err(e) => ErrorResponse{code: 0, message:"Key not found".to_string()}.to_json(),
             }
         }
         Command::Keys => {
-            format!("Keys: {:?}", db.keys())
+            KeysResponse{keys: db.keys()}.to_json()
         }
         Command::PartitionsDetails => {
             let mut partitions_details = Vec::new();
             for partition in db.partitions.iter() {
-                partitions_details.push(format!("Partition {}: {}", partition.partition_number, partition.count_entries()));
+                let pd = PartitionDetail{partition: partition.partition_number, keys: partition.keys()};
+                partitions_details.push(pd);
             }
-            partitions_details.join("\n")
+            PartitionsDetailsResponse{ partitions: partitions_details}.to_json()
         }
         Command::Clear => {
             db.delete_all();
-            "Database cleared".to_string()
+            ErrorResponse{code: 0, message:"Database cleared".to_string()}.to_json()
         }
         Command::Quit => {
-            "Quitting".to_string()
+            ErrorResponse{code: 0, message:"Quitting".to_string()}.to_json()
         }
     }
 }
